@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log a Calibration — Tool Calibration Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+  :root{
+    --ink: #2B2620;
+    --ink-soft: #5C554A;
+    --base: #E7E0D0;
+    --surface: #FFFDF8;
+    --surface-2: #F2ECDD;
+    --line: #D8CFB8;
+    --brass: #A9711C;
+    --brass-dark: #7E5313;
+    --green: #4A7C59;
+    --green-bg: #E4EEE4;
+    --red: #A73A2E;
+    --red-bg: #F5DFDB;
+    --radius: 3px;
+    --shadow: 0 1px 2px rgba(43,38,32,0.08), 0 2px 8px rgba(43,38,32,0.06);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--base);
+    background-image: radial-gradient(circle at 1px 1px, rgba(43,38,32,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 28px 20px 60px;
+  }
+  .wrap{ max-width: 620px; margin: 0 auto; }
+
+  header{ display:flex; align-items:center; gap:14px; margin-bottom: 6px; }
+  .stamp{
+    width:48px; height:48px; border-radius:50%;
+    border: 3px solid var(--brass);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; background: var(--surface); box-shadow: var(--shadow);
+    transform: rotate(-6deg);
+  }
+  .stamp svg{ width:24px; height:24px; }
+  h1{ font-family:'Roboto Slab', serif; font-weight:700; font-size: 22px; margin:0; }
+  .subtitle{ font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
+
+  .page-nav{ margin: 16px 0 20px; }
+  .nav-link{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    font-size: 13px; font-weight:600; color: var(--brass-dark);
+    border: 1px dashed var(--brass); border-radius: var(--radius);
+    background: var(--surface-2); padding: 8px 14px;
+  }
+  .nav-link:hover{ background: var(--surface); }
+
+  button{
+    font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 14px;
+    cursor:pointer; border-radius: var(--radius); padding: 11px 18px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    min-height: 44px;
+  }
+  button:hover{ box-shadow: var(--shadow); }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--brass); outline-offset: 2px;
+  }
+  .btn-primary{ background: var(--brass); border-color: var(--brass-dark); color: #FFF8ED; width:100%; font-size:15px; }
+  .btn-primary:hover{ background: var(--brass-dark); }
+  .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
+  .btn-ghost{ background: transparent; }
+
+  .admin-box{
+    background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px 16px; display:flex; gap: 10px;
+    align-items:center; flex-wrap:wrap; margin: 16px 0;
+  }
+  .admin-box input{
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface-2); color: var(--ink); flex:1; min-width:160px;
+  }
+  .admin-note{ font-size: 11px; color: var(--ink-soft); }
+
+  .card{
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 22px;
+  }
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom: 16px; }
+  .field label{ font-size: 12px; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-soft); font-weight:600; }
+  .field input, .field select, .field textarea{
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; padding: 11px 12px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface-2); color: var(--ink); min-height: 44px;
+  }
+  .field select:disabled, .field input:disabled{ opacity: 0.55; cursor:not-allowed; }
+  .field textarea{ min-height: 70px; resize: vertical; }
+  .hint{ font-size: 12px; color: var(--ink-soft); margin-top: -8px; margin-bottom: 16px; }
+
+  .banner{
+    border-radius: var(--radius); padding: 12px 16px; font-size: 13px; margin-bottom: 16px;
+  }
+  .banner.error{ background: var(--red-bg); border: 1px solid var(--red); color: var(--red); }
+  .banner.success{ background: var(--green-bg); border: 1px solid var(--green); color: var(--green); }
+
+  .empty-note{ text-align:center; color: var(--ink-soft); font-size: 13px; padding: 20px; }
+
+  footer{ margin-top: 24px; font-size: 11px; color: var(--ink-soft); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="stamp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#A9711C" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M8 12l2.5 2.5L16 9" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Log a Calibration</h1>
+      <div class="subtitle">Quick entry for one tool at a time</div>
+    </div>
+  </header>
+
+  <div class="page-nav"><a class="nav-link" href="index.html">← Back to full register</a></div>
+
+  <div id="setupNotice"></div>
+  <div id="adminArea"></div>
+  <div id="formArea"></div>
+
+  <footer>Admin access is a front-end gate for convenience, not secure authentication.</footer>
+</div>
+
+<script>
+(function(){
+  let entries = [];
+  let calibrators = {};
+  let isAdmin = false;
+  let showLoginBox = false;
+  let loginError = "";
+  let loading = true;
+  let dbError = false;
+  let lastResult = null; // { ok: true/false, message }
+
+  function escapeHtml(str){
+    return String(str || "").replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+  function fmtDate(d){
+    if(!d) return "—";
+    const dt = new Date(d + "T00:00:00");
+    return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  }
+  function addMonths(dateStr, n){
+    const d = new Date(dateStr + "T00:00:00");
+    d.setMonth(d.getMonth() + n);
+    return d.toISOString().slice(0,10);
+  }
+  function calibratorsFor(section){ return calibrators[section] || []; }
+
+  async function loadAll(){
+    loading = true; render();
+    if(NEEDS_SETUP){ loading = false; render(); return; }
+    try{
+      const data = await dbGet("entries");
+      entries = data || [];
+      entries.forEach(e => { if(!Array.isArray(e.history)) e.history = []; });
+    }catch(err){ console.error(err); entries = []; dbError = true; }
+    try{
+      const dataC = await dbGet("calibrators");
+      calibrators = dataC || JSON.parse(JSON.stringify(DEFAULT_CALIBRATORS));
+    }catch(err){ console.error(err); calibrators = JSON.parse(JSON.stringify(DEFAULT_CALIBRATORS)); dbError = true; }
+    loading = false;
+    render();
+  }
+
+  async function persistEntries(){
+    try{ await dbSet("entries", entries); return true; }
+    catch(err){ console.error(err); return false; }
+  }
+
+  function renderSetupNotice(){
+    const el = document.getElementById("setupNotice");
+    if(NEEDS_SETUP){
+      el.innerHTML = `<div class="banner error"><strong>Shared database not configured yet.</strong> Fill in FIREBASE_DB_URL and DATA_PATH_TOKEN in config.js before this page can log anything.</div>`;
+      return;
+    }
+    if(dbError){
+      el.innerHTML = `<div class="banner error"><strong>Couldn't reach the shared database.</strong> Check your connection and try reloading.</div>`;
+      return;
+    }
+    el.innerHTML = "";
+  }
+
+  function renderAdminArea(){
+    const el = document.getElementById("adminArea");
+    if(isAdmin){
+      el.innerHTML = `<div class="admin-box">
+        <span class="admin-note">Logged in — entries you save here update the shared register.</span>
+        <button class="btn-ghost" id="btnLogout" style="margin-left:auto;">Log out</button>
+      </div>`;
+      document.getElementById("btnLogout").onclick = () => { isAdmin = false; render(); };
+      return;
+    }
+    el.innerHTML = `<div class="admin-box">
+      <input type="password" id="pwInput" placeholder="Admin password" />
+      <button class="btn-primary" style="width:auto;" id="btnLogin">Log in</button>
+      <span class="admin-note" style="color:var(--red);">${loginError}</span>
+    </div>`;
+    const pwInput = document.getElementById("pwInput");
+    const tryLogin = () => {
+      if(pwInput.value === ADMIN_PASSWORD){ isAdmin = true; loginError=""; render(); }
+      else { loginError = "Incorrect password."; render(); }
+    };
+    document.getElementById("btnLogin").onclick = tryLogin;
+    pwInput.addEventListener("keydown", e => { if(e.key === "Enter") tryLogin(); });
+  }
+
+  function renderForm(){
+    const el = document.getElementById("formArea");
+    if(NEEDS_SETUP || loading){ el.innerHTML = ""; return; }
+    if(!isAdmin){
+      el.innerHTML = `<div class="card"><div class="empty-note">Log in above to record a calibration.</div></div>`;
+      return;
+    }
+    if(entries.length === 0){
+      el.innerHTML = `<div class="card"><div class="empty-note">No tools found in the register yet. Add tools from the full register first.</div></div>`;
+      return;
+    }
+
+    const resultHtml = lastResult
+      ? `<div class="banner ${lastResult.ok ? 'success' : 'error'}">${escapeHtml(lastResult.message)}</div>`
+      : "";
+
+    el.innerHTML = `
+      ${resultHtml}
+      <div class="card">
+        <div class="field">
+          <label for="lf-section">Section</label>
+          <select id="lf-section">${SECTIONS.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}</select>
+        </div>
+        <div class="field">
+          <label for="lf-entry">Tool</label>
+          <select id="lf-entry"></select>
+        </div>
+        <div class="field">
+          <label for="lf-date">Calibration date</label>
+          <input id="lf-date" type="date" />
+        </div>
+        <div class="field">
+          <label for="lf-by">Calibrated by</label>
+          <select id="lf-by"></select>
+        </div>
+        <div class="field">
+          <label for="lf-notes">Notes</label>
+          <textarea id="lf-notes" placeholder="Optional"></textarea>
+        </div>
+        <button class="btn-primary" id="btnLog">Log calibration</button>
+      </div>
+    `;
+
+    const sectionSelect = document.getElementById("lf-section");
+    const entrySelect = document.getElementById("lf-entry");
+    const dateInput = document.getElementById("lf-date");
+    const bySelect = document.getElementById("lf-by");
+    const btnLog = document.getElementById("btnLog");
+
+    dateInput.value = new Date().toISOString().slice(0,10);
+
+    function populateEntries(){
+      const list = entries.filter(e => e.section === sectionSelect.value);
+      if(list.length === 0){
+        entrySelect.innerHTML = `<option value="">No tools in this section</option>`;
+        entrySelect.disabled = true;
+        btnLog.disabled = true;
+      }else{
+        entrySelect.disabled = false;
+        btnLog.disabled = false;
+        entrySelect.innerHTML = list.map(e =>
+          `<option value="${e.id}">${escapeHtml(e.tool)} — ${escapeHtml(e.serial)} (next due ${fmtDate(e.nextDue)})</option>`
+        ).join("");
+      }
+    }
+    function populateCalibrators(){
+      const names = calibratorsFor(sectionSelect.value);
+      bySelect.innerHTML = names.length
+        ? names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")
+        : `<option value="">No names set for this section</option>`;
+    }
+    function refresh(){ populateEntries(); populateCalibrators(); }
+    refresh();
+    sectionSelect.addEventListener("change", refresh);
+
+    btnLog.addEventListener("click", async () => {
+      const entryId = entrySelect.value;
+      const date = dateInput.value;
+      const by = bySelect.value;
+      const notes = document.getElementById("lf-notes").value.trim();
+      if(!entryId || !date){
+        lastResult = { ok:false, message: "Choose a tool and a calibration date first." };
+        render();
+        return;
+      }
+      const entry = entries.find(e => e.id === entryId);
+      if(!entry){
+        lastResult = { ok:false, message: "That tool couldn't be found — try reloading the page." };
+        render();
+        return;
+      }
+      btnLog.disabled = true;
+      btnLog.textContent = "Saving…";
+      entry.history = entry.history || [];
+      entry.history.push({ id: "h-" + Date.now() + "-" + Math.random().toString(36).slice(2,6), date, by, notes });
+      entry.lastCal = date;
+      entry.nextDue = addMonths(date, 3);
+      entry.by = by;
+      const saved = await persistEntries();
+      if(saved){
+        lastResult = { ok:true, message: `Logged. ${entry.tool} (${entry.serial}) next due ${fmtDate(entry.nextDue)}.` };
+      }else{
+        lastResult = { ok:false, message: "Couldn't save — check your connection and try again." };
+      }
+      render();
+    });
+  }
+
+  function render(){
+    renderSetupNotice();
+    renderAdminArea();
+    renderForm();
+  }
+
+  loadAll();
+})();
+</script>
+</body>
+</html>
